@@ -37,10 +37,37 @@ cp .env.example .env
 
 ## Запуск через Docker Compose
 
-Поднять PostgreSQL и приложение:
+Рекомендуемый способ для локальной проверки:
 
 ```bash
-docker compose up -d --build
+make dev-up
+```
+
+Эта команда:
+- поднимает PostgreSQL;
+- ждёт готовности БД;
+- применяет миграцию, если таблица `subscriptions` ещё не создана;
+- собирает и запускает приложение;
+- ждёт `healthz`.
+
+Полезные команды:
+
+```bash
+make help
+make logs
+make dev-down
+make dev-reset
+make smoke-test
+```
+
+Если нужен запуск вручную без `Makefile`:
+
+```bash
+docker compose up -d postgres
+docker compose exec -T postgres \
+  psql -U subscriptions -d subscriptions -v ON_ERROR_STOP=1 \
+  < migrations/000001_create_subscriptions.up.sql
+docker compose up -d --build app
 docker compose ps
 ```
 
@@ -70,9 +97,18 @@ go run ./cmd/api
 
 ## Миграции
 
-Миграции пока применяются вручную.
+Через `Makefile`:
 
-Применить основную миграцию в Docker Compose окружении:
+```bash
+make migrate-up
+make migrate-down
+```
+
+`make dev-up` уже включает `make migrate-up`.
+
+Если нужен ручной запуск в Docker Compose окружении:
+
+Применить основную миграцию:
 
 ```bash
 docker compose exec -T postgres \
@@ -82,7 +118,8 @@ docker compose exec -T postgres \
 
 Если база уже была инициализирована раньше, повторный запуск этой команды вернёт ошибку `relation "subscriptions" already exists`. В таком случае:
 - либо не применяйте миграцию повторно;
-- либо поднимите окружение заново с чистым volume, если нужна полностью чистая база.
+- либо используйте `make migrate-up`, который пропускает уже применённую миграцию;
+- либо используйте `make dev-reset`, если нужна полностью чистая база.
 
 ## Swagger
 
@@ -96,6 +133,12 @@ Swagger UI использует текущий файл [docs/swagger/swagger.ya
 ## CRUDL Smoke Scenario
 
 Ниже минимальный сценарий ручной проверки `feat-001-subs`.
+
+Автоматизированный вариант:
+
+```bash
+make smoke-test
+```
 
 ### 1. Создать подписку
 
