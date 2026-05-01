@@ -2,21 +2,24 @@
 
 REST-сервис для управления онлайн-подписками пользователей.
 
-Сейчас в проекте реализована `feat-001-subs`:
+Сейчас в проекте есть реализация:
+
 - `POST /subscriptions`
 - `GET /subscriptions`
 - `GET /subscriptions/{id}`
 - `PUT /subscriptions/{id}`
 - `DELETE /subscriptions/{id}`
+- `GET /subscriptions/total`
 
 ## Требования
 
 - Docker и Docker Compose
 - `make` для рекомендуемого сценария запуска
 - `curl` для ручной проверки API
-- `python3` для `make smoke-test`
+- `python3` для `make smoke-test` - необязательно если нет нужды в тестах
 
 Для локального запуска без Docker:
+
 - Go 1.23+
 - PostgreSQL 16+
 
@@ -46,6 +49,7 @@ make dev-up
 ```
 
 Эта команда:
+
 - поднимает PostgreSQL;
 - ждёт готовности БД;
 - применяет миграцию, если таблица `subscriptions` ещё не создана;
@@ -119,6 +123,7 @@ docker compose exec -T postgres \
 ```
 
 Если база уже была инициализирована раньше, повторный запуск этой команды вернёт ошибку `relation "subscriptions" already exists`. В таком случае:
+
 - либо не применяйте миграцию повторно;
 - либо используйте `make migrate-up`, который пропускает уже применённую миграцию;
 - либо используйте `make dev-reset`, если нужна полностью чистая база.
