@@ -75,7 +75,7 @@ func TestSubscriptionTotalRepositoryTotalCostCountsOnlyIntersectingSubscriptions
 		EndDate:     yearMonthPointer(t, "05-2025"),
 	})
 
-	got, err := totalRepo.TotalCost(ctx, SubscriptionTotalFilter{
+	got, err := totalRepo.TotalCost(ctx, subscriptiontotal.Filter{
 		Period: subscriptiontotal.Period{
 			From: mustYearMonth(t, "03-2025"),
 			To:   mustYearMonth(t, "05-2025"),
@@ -127,7 +127,7 @@ func TestSubscriptionTotalRepositoryTotalCostAppliesUserIDFilter(t *testing.T) {
 		EndDate:     yearMonthPointer(t, "08-2025"),
 	})
 
-	got, err := totalRepo.TotalCost(ctx, SubscriptionTotalFilter{
+	got, err := totalRepo.TotalCost(ctx, subscriptiontotal.Filter{
 		Period: subscriptiontotal.Period{
 			From: mustYearMonth(t, "03-2025"),
 			To:   mustYearMonth(t, "05-2025"),
@@ -171,7 +171,7 @@ func TestSubscriptionTotalRepositoryTotalCostAppliesServiceNameFilter(t *testing
 		EndDate:     yearMonthPointer(t, "05-2025"),
 	})
 
-	got, err := totalRepo.TotalCost(ctx, SubscriptionTotalFilter{
+	got, err := totalRepo.TotalCost(ctx, subscriptiontotal.Filter{
 		Period: subscriptiontotal.Period{
 			From: mustYearMonth(t, "03-2025"),
 			To:   mustYearMonth(t, "05-2025"),
@@ -224,7 +224,7 @@ func TestSubscriptionTotalRepositoryTotalCostAppliesCombinedFilters(t *testing.T
 		EndDate:     yearMonthPointer(t, "05-2025"),
 	})
 
-	got, err := totalRepo.TotalCost(ctx, SubscriptionTotalFilter{
+	got, err := totalRepo.TotalCost(ctx, subscriptiontotal.Filter{
 		Period: subscriptiontotal.Period{
 			From: mustYearMonth(t, "03-2025"),
 			To:   mustYearMonth(t, "05-2025"),
@@ -261,7 +261,7 @@ func TestSubscriptionTotalRepositoryTotalCostReturnsZeroWhenNothingMatches(t *te
 		EndDate:     yearMonthPointer(t, "05-2025"),
 	})
 
-	got, err := totalRepo.TotalCost(ctx, SubscriptionTotalFilter{
+	got, err := totalRepo.TotalCost(ctx, subscriptiontotal.Filter{
 		Period: subscriptiontotal.Period{
 			From: mustYearMonth(t, "06-2025"),
 			To:   mustYearMonth(t, "08-2025"),

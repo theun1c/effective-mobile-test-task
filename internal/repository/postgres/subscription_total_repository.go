@@ -4,16 +4,8 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/google/uuid"
-
 	subscriptiontotal "github.com/theun1c/effective-mobile-test-task/internal/service/subscription_total"
 )
-
-type SubscriptionTotalFilter struct {
-	Period      subscriptiontotal.Period
-	UserID      *uuid.UUID
-	ServiceName *string
-}
 
 type SubscriptionTotalRepository struct {
 	db *sql.DB
@@ -23,7 +15,7 @@ func NewSubscriptionTotalRepository(db *sql.DB) *SubscriptionTotalRepository {
 	return &SubscriptionTotalRepository{db: db}
 }
 
-func (r *SubscriptionTotalRepository) TotalCost(ctx context.Context, filter SubscriptionTotalFilter) (int, error) {
+func (r *SubscriptionTotalRepository) TotalCost(ctx context.Context, filter subscriptiontotal.Filter) (int, error) {
 	rows, err := r.db.QueryContext(
 		ctx,
 		`SELECT id, service_name, price, user_id, start_date, end_date, created_at, updated_at
