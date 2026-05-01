@@ -8,6 +8,7 @@ approval_policy = "on-request"
 sandbox_mode = "workspace-write"
 
 
+
 [profiles.review]
 # Read-only mode for code review, architecture review and security analysis.
 # Good for: "review auth module", "analyze issues module", "find risks".
@@ -30,6 +31,6 @@ sandbox_mode = "workspace-write"
 
 
 [profiles.safe]
-# Very conservative mode for sensitive areas like auth, sessions, Prisma migrations.
+# Very conservative mode for sensitive areas
 approval_policy = "on-request"
 sandbox_mode = "workspace-write"
