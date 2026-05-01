@@ -78,6 +78,23 @@ func TestNewRedirectsRootToSwaggerUI(t *testing.T) {
 	}
 }
 
+func TestNewRoutesSubscriptionTotal(t *testing.T) {
+	router := NewWithTotal(slog.New(slog.NewTextHandler(io.Discard, nil)), serviceStub{}, totalServiceStub{})
+
+	request := httptest.NewRequest(http.MethodGet, "/subscriptions/total?from=03-2025&to=05-2025", nil)
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+
+	if body := recorder.Body.String(); !strings.Contains(body, `"total_cost":2400`) {
+		t.Fatalf("body = %q, want total_cost response", body)
+	}
+}
+
 type serviceStub struct{}
 
 func (serviceStub) Create(_ context.Context, _ dto.CreateSubscriptionRequest) (dto.SubscriptionResponse, error) {
@@ -98,4 +115,10 @@ func (serviceStub) Update(_ context.Context, _ uuid.UUID, _ dto.UpdateSubscripti
 
 func (serviceStub) Delete(_ context.Context, _ uuid.UUID) error {
 	return nil
+}
+
+type totalServiceStub struct{}
+
+func (totalServiceStub) TotalCost(_ context.Context, _ dto.SubscriptionTotalQuery) (dto.SubscriptionTotalResponse, error) {
+	return dto.SubscriptionTotalResponse{TotalCost: 2400}, nil
 }

@@ -15,9 +15,14 @@ type healthResponse struct {
 }
 
 func New(logger *slog.Logger, subscriptionService handler.SubscriptionService) http.Handler {
+	return NewWithTotal(logger, subscriptionService, nil)
+}
+
+func NewWithTotal(logger *slog.Logger, subscriptionService handler.SubscriptionService, subscriptionTotalService handler.SubscriptionTotalService) http.Handler {
 	mux := http.NewServeMux()
 
 	subscriptionHandler := handler.NewSubscriptionHandlerWithLogger(subscriptionService, logger)
+	subscriptionTotalHandler := handler.NewSubscriptionTotalHandlerWithLogger(subscriptionTotalService, logger)
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
@@ -42,6 +47,7 @@ func New(logger *slog.Logger, subscriptionService handler.SubscriptionService) h
 
 	mux.HandleFunc("POST /subscriptions", subscriptionHandler.Create)
 	mux.HandleFunc("GET /subscriptions", subscriptionHandler.List)
+	mux.HandleFunc("GET /subscriptions/total", subscriptionTotalHandler.TotalCost)
 	mux.HandleFunc("GET /subscriptions/{id}", subscriptionHandler.GetByID)
 	mux.HandleFunc("PUT /subscriptions/{id}", subscriptionHandler.Update)
 	mux.HandleFunc("DELETE /subscriptions/{id}", subscriptionHandler.Delete)
