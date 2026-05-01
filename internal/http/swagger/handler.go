@@ -1,60 +1,39 @@
 package swagger
 
 import (
-	"html/template"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 )
 
-type pageData struct {
-	Spec string
-}
-
-var indexTemplate = template.Must(template.New("swagger-index").Parse(`<!doctype html>
+const swaggerUIHTML = `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Swagger Docs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Swagger UI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
     <style>
-      :root { color-scheme: light; }
-      body {
-        margin: 0;
-        padding: 32px;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        background: #f7f7f5;
-        color: #1f2328;
-      }
-      main {
-        max-width: 1100px;
-        margin: 0 auto;
-      }
-      h1 {
-        margin-top: 0;
-      }
-      a {
-        color: #0b57d0;
-      }
-      pre {
-        overflow-x: auto;
-        padding: 20px;
-        background: #ffffff;
-        border: 1px solid #d0d7de;
-        border-radius: 10px;
-        line-height: 1.45;
-      }
+      html { box-sizing: border-box; overflow-y: scroll; }
+      *, *:before, *:after { box-sizing: inherit; }
+      body { margin: 0; background: #fafafa; }
     </style>
   </head>
   <body>
-    <main>
-      <h1>Swagger Docs</h1>
-      <p>Raw OpenAPI spec: <a href="/swagger/openapi.yaml">/swagger/openapi.yaml</a></p>
-      <pre>{{ .Spec }}</pre>
-    </main>
+    <div id="swagger-ui"></div>
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+    <script>
+      window.addEventListener('load', function () {
+        window.ui = SwaggerUIBundle({
+          url: '/swagger/openapi.yaml',
+          dom_id: '#swagger-ui'
+        });
+      });
+    </script>
   </body>
 </html>
-`))
+`
 
 func Handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -62,14 +41,9 @@ func Handler() http.Handler {
 		case "/swagger":
 			http.Redirect(w, r, "/swagger/", http.StatusMovedPermanently)
 		case "/swagger/":
-			spec, err := readSpecFile()
-			if err != nil {
-				http.Error(w, "swagger spec is unavailable", http.StatusInternalServerError)
-				return
-			}
-
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			_ = indexTemplate.Execute(w, pageData{Spec: string(spec)})
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(swaggerUIHTML))
 		case "/swagger/openapi.yaml":
 			spec, err := readSpecFile()
 			if err != nil {
