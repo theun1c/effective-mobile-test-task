@@ -7,8 +7,8 @@ info:
 
     Dates in the public API use the `MM-YYYY` format.
 servers:
-  - url: http://localhost:8080
-    description: Local development server
+  - url: /
+    description: Current server
 tags:
   - name: Subscriptions
     description: Operations for managing subscriptions
@@ -26,7 +26,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateSubscriptionRequest'
+              $ref: "#/components/schemas/CreateSubscriptionRequest"
             examples:
               create:
                 value:
@@ -35,30 +35,30 @@ paths:
                   user_id: 60601fee-2bf1-4721-ae6f-7636e79a0cba
                   start_date: 07-2025
       responses:
-        '201':
+        "201":
           description: Subscription created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SubscriptionResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+                $ref: "#/components/schemas/SubscriptionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     get:
       tags:
         - Subscriptions
       summary: List subscriptions
       description: Returns all subscriptions without pagination or filtering.
       responses:
-        '200':
+        "200":
           description: Subscription list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SubscriptionListResponse'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+                $ref: "#/components/schemas/SubscriptionListResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /subscriptions/total:
     get:
       tags:
@@ -71,13 +71,13 @@ paths:
           required: true
           description: Start of the period in MM-YYYY format
           schema:
-            $ref: '#/components/schemas/YearMonth'
+            $ref: "#/components/schemas/YearMonth"
         - name: to
           in: query
           required: true
           description: End of the period in MM-YYYY format
           schema:
-            $ref: '#/components/schemas/YearMonth'
+            $ref: "#/components/schemas/YearMonth"
         - name: user_id
           in: query
           required: false
@@ -92,18 +92,18 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Total cost calculated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SubscriptionTotalResponse'
+                $ref: "#/components/schemas/SubscriptionTotalResponse"
               example:
                 total_cost: 2400
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /subscriptions/{id}:
     get:
       tags:
@@ -111,33 +111,33 @@ paths:
       summary: Get subscription by ID
       description: Returns a single subscription by UUID.
       parameters:
-        - $ref: '#/components/parameters/SubscriptionID'
+        - $ref: "#/components/parameters/SubscriptionID"
       responses:
-        '200':
+        "200":
           description: Subscription found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SubscriptionResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+                $ref: "#/components/schemas/SubscriptionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     put:
       tags:
         - Subscriptions
       summary: Update subscription
       description: Fully updates an existing subscription by UUID.
       parameters:
-        - $ref: '#/components/parameters/SubscriptionID'
+        - $ref: "#/components/parameters/SubscriptionID"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateSubscriptionRequest'
+              $ref: "#/components/schemas/UpdateSubscriptionRequest"
             examples:
               update:
                 value:
@@ -147,34 +147,34 @@ paths:
                   start_date: 07-2025
                   end_date: 12-2025
       responses:
-        '200':
+        "200":
           description: Subscription updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SubscriptionResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+                $ref: "#/components/schemas/SubscriptionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     delete:
       tags:
         - Subscriptions
       summary: Delete subscription
       description: Deletes an existing subscription by UUID.
       parameters:
-        - $ref: '#/components/parameters/SubscriptionID'
+        - $ref: "#/components/parameters/SubscriptionID"
       responses:
-        '204':
+        "204":
           description: Subscription deleted. Response body is empty.
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 components:
   parameters:
     SubscriptionID:
@@ -192,7 +192,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
           examples:
             invalidJson:
               summary: Invalid JSON body
@@ -214,7 +214,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
           example:
             error: subscription not found
     InternalServerError:
@@ -222,7 +222,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
           example:
             error: internal server error
   schemas:
@@ -254,10 +254,10 @@ components:
           description: User UUID
           example: 60601fee-2bf1-4721-ae6f-7636e79a0cba
         start_date:
-          $ref: '#/components/schemas/YearMonth'
+          $ref: "#/components/schemas/YearMonth"
         end_date:
           allOf:
-            - $ref: '#/components/schemas/YearMonth'
+            - $ref: "#/components/schemas/YearMonth"
           nullable: true
           description: Optional end month
     UpdateSubscriptionRequest:
@@ -283,10 +283,10 @@ components:
           description: User UUID
           example: 60601fee-2bf1-4721-ae6f-7636e79a0cba
         start_date:
-          $ref: '#/components/schemas/YearMonth'
+          $ref: "#/components/schemas/YearMonth"
         end_date:
           allOf:
-            - $ref: '#/components/schemas/YearMonth'
+            - $ref: "#/components/schemas/YearMonth"
           nullable: true
           description: Optional end month
     SubscriptionResponse:
@@ -317,10 +317,10 @@ components:
           description: User UUID
           example: 60601fee-2bf1-4721-ae6f-7636e79a0cba
         start_date:
-          $ref: '#/components/schemas/YearMonth'
+          $ref: "#/components/schemas/YearMonth"
         end_date:
           allOf:
-            - $ref: '#/components/schemas/YearMonth'
+            - $ref: "#/components/schemas/YearMonth"
           nullable: true
           description: Optional end month
     SubscriptionListResponse:
@@ -331,7 +331,7 @@ components:
         subscriptions:
           type: array
           items:
-            $ref: '#/components/schemas/SubscriptionResponse'
+            $ref: "#/components/schemas/SubscriptionResponse"
     SubscriptionTotalResponse:
       type: object
       required:
@@ -366,4 +366,4 @@ components:
           type: array
           description: Validation details. Present only for validation errors.
           items:
-            $ref: '#/components/schemas/ErrorDetail'
+            $ref: "#/components/schemas/ErrorDetail"
