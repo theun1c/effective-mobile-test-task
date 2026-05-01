@@ -5,14 +5,18 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/theun1c/effective-mobile-test-task/internal/http/handler"
 )
 
 type healthResponse struct {
 	Status string `json:"status"`
 }
 
-func New(logger *log.Logger) http.Handler {
+func New(logger *log.Logger, subscriptionService handler.SubscriptionService) http.Handler {
 	mux := http.NewServeMux()
+
+	subscriptionHandler := handler.NewSubscriptionHandler(subscriptionService)
 
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -25,6 +29,12 @@ func New(logger *log.Logger) http.Handler {
 
 		_ = json.NewEncoder(w).Encode(healthResponse{Status: "ok"})
 	})
+
+	mux.HandleFunc("POST /subscriptions", subscriptionHandler.Create)
+	mux.HandleFunc("GET /subscriptions", subscriptionHandler.List)
+	mux.HandleFunc("GET /subscriptions/{id}", subscriptionHandler.GetByID)
+	mux.HandleFunc("PUT /subscriptions/{id}", subscriptionHandler.Update)
+	mux.HandleFunc("DELETE /subscriptions/{id}", subscriptionHandler.Delete)
 
 	return requestLogger(logger, mux)
 }

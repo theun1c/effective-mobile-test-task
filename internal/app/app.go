@@ -14,6 +14,8 @@ import (
 
 	"github.com/theun1c/effective-mobile-test-task/internal/config"
 	"github.com/theun1c/effective-mobile-test-task/internal/http/router"
+	postgresrepo "github.com/theun1c/effective-mobile-test-task/internal/repository/postgres"
+	subscriptionservice "github.com/theun1c/effective-mobile-test-task/internal/service/subscription"
 )
 
 type App struct {
@@ -32,7 +34,9 @@ func New(cfg config.Config) (*App, error) {
 		return nil, fmt.Errorf("init postgres: %w", err)
 	}
 
-	httpRouter := router.New(logger)
+	subscriptionRepository := postgresrepo.NewSubscriptionRepository(db)
+	subscriptionService := subscriptionservice.New(subscriptionRepository)
+	httpRouter := router.New(logger, subscriptionService)
 
 	server := &http.Server{
 		Addr:              cfg.HTTP.Address(),
