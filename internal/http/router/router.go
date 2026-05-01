@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/theun1c/effective-mobile-test-task/internal/http/handler"
+	httpswagger "github.com/theun1c/effective-mobile-test-task/internal/http/swagger"
 )
 
 type healthResponse struct {
@@ -35,6 +36,8 @@ func New(logger *slog.Logger, subscriptionService handler.SubscriptionService) h
 	mux.HandleFunc("GET /subscriptions/{id}", subscriptionHandler.GetByID)
 	mux.HandleFunc("PUT /subscriptions/{id}", subscriptionHandler.Update)
 	mux.HandleFunc("DELETE /subscriptions/{id}", subscriptionHandler.Delete)
+	mux.Handle("/swagger", httpswagger.Handler())
+	mux.Handle("/swagger/", httpswagger.Handler())
 
 	return requestLogger(logger, mux)
 }

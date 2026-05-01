@@ -16,6 +16,7 @@ RUN apk add --no-cache ca-certificates
 WORKDIR /app
 
 COPY --from=builder /out/api /app/api
+COPY --from=builder /src/docs/swagger/swagger.yaml /app/docs/swagger/swagger.yaml
 
 EXPOSE 8080
 
