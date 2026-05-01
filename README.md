@@ -12,7 +12,9 @@ REST-сервис для управления онлайн-подписками 
 ## Требования
 
 - Docker и Docker Compose
+- `make` для рекомендуемого сценария запуска
 - `curl` для ручной проверки API
+- `python3` для `make smoke-test`
 
 Для локального запуска без Docker:
 - Go 1.23+
@@ -125,10 +127,11 @@ docker compose exec -T postgres \
 
 Доступно два endpoint'а:
 
-- Swagger UI: `http://127.0.0.1:8080/swagger/`
+- Swagger docs page: `http://127.0.0.1:8080/swagger/`
 - Raw OpenAPI spec: `http://127.0.0.1:8080/swagger/openapi.yaml`
 
-Swagger UI использует текущий файл [docs/swagger/swagger.yaml](docs/swagger/swagger.yaml).
+Страница `/swagger/` self-contained и не требует CDN для открытия.
+Оба endpoint'а используют текущий файл [docs/swagger/swagger.yaml](docs/swagger/swagger.yaml).
 
 ## CRUDL Smoke Scenario
 

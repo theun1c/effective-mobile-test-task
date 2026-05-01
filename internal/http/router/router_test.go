@@ -30,8 +30,13 @@ func TestNewServesSwaggerUI(t *testing.T) {
 		t.Fatalf("Content-Type = %q, want html", contentType)
 	}
 
-	if body := recorder.Body.String(); !strings.Contains(body, "SwaggerUIBundle") {
-		t.Fatalf("body = %q, want Swagger UI bootstrap", body)
+	body := recorder.Body.String()
+	if !strings.Contains(body, "/swagger/openapi.yaml") {
+		t.Fatalf("body = %q, want link to raw openapi spec", body)
+	}
+
+	if strings.Contains(body, "jsdelivr") {
+		t.Fatalf("body = %q, want self-contained swagger page without CDN assets", body)
 	}
 }
 

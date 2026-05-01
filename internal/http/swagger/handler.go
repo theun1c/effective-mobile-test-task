@@ -8,25 +8,50 @@ import (
 	"runtime"
 )
 
+type pageData struct {
+	Spec string
+}
+
 var indexTemplate = template.Must(template.New("swagger-index").Parse(`<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Swagger UI</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+    <title>Swagger Docs</title>
     <style>
-      html, body { margin: 0; padding: 0; }
+      :root { color-scheme: light; }
+      body {
+        margin: 0;
+        padding: 32px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        background: #f7f7f5;
+        color: #1f2328;
+      }
+      main {
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+      h1 {
+        margin-top: 0;
+      }
+      a {
+        color: #0b57d0;
+      }
+      pre {
+        overflow-x: auto;
+        padding: 20px;
+        background: #ffffff;
+        border: 1px solid #d0d7de;
+        border-radius: 10px;
+        line-height: 1.45;
+      }
     </style>
   </head>
   <body>
-    <div id="swagger-ui"></div>
-    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
-    <script>
-      window.ui = SwaggerUIBundle({
-        url: '/swagger/openapi.yaml',
-        dom_id: '#swagger-ui'
-      });
-    </script>
+    <main>
+      <h1>Swagger Docs</h1>
+      <p>Raw OpenAPI spec: <a href="/swagger/openapi.yaml">/swagger/openapi.yaml</a></p>
+      <pre>{{ .Spec }}</pre>
+    </main>
   </body>
 </html>
 `))
@@ -37,8 +62,14 @@ func Handler() http.Handler {
 		case "/swagger":
 			http.Redirect(w, r, "/swagger/", http.StatusMovedPermanently)
 		case "/swagger/":
+			spec, err := readSpecFile()
+			if err != nil {
+				http.Error(w, "swagger spec is unavailable", http.StatusInternalServerError)
+				return
+			}
+
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			_ = indexTemplate.Execute(w, nil)
+			_ = indexTemplate.Execute(w, pageData{Spec: string(spec)})
 		case "/swagger/openapi.yaml":
 			spec, err := readSpecFile()
 			if err != nil {
