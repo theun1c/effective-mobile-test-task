@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -12,6 +13,7 @@ import (
 	domain "github.com/theun1c/effective-mobile-test-task/internal/domain/subscription"
 	"github.com/theun1c/effective-mobile-test-task/internal/dto"
 	httpresponse "github.com/theun1c/effective-mobile-test-task/internal/http/response"
+	applogger "github.com/theun1c/effective-mobile-test-task/internal/logger"
 	"github.com/theun1c/effective-mobile-test-task/internal/validation"
 )
 
@@ -25,21 +27,33 @@ type SubscriptionService interface {
 
 type SubscriptionHandler struct {
 	service SubscriptionService
+	logger  *slog.Logger
 }
 
 func NewSubscriptionHandler(service SubscriptionService) *SubscriptionHandler {
-	return &SubscriptionHandler{service: service}
+	return NewSubscriptionHandlerWithLogger(service, applogger.Nop())
+}
+
+func NewSubscriptionHandlerWithLogger(service SubscriptionService, logger *slog.Logger) *SubscriptionHandler {
+	if logger == nil {
+		logger = applogger.Nop()
+	}
+
+	return &SubscriptionHandler{
+		service: service,
+		logger:  logger,
+	}
 }
 
 func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateSubscriptionRequest
-	if !decodeJSONBody(w, r, &req) {
+	if !decodeJSONBody(h.logger, w, r, &req, "create_subscription") {
 		return
 	}
 
 	subscription, err := h.service.Create(r.Context(), req)
 	if err != nil {
-		writeServiceError(w, err)
+		writeServiceError(h.logger, w, err, "create_subscription")
 		return
 	}
 
@@ -47,14 +61,14 @@ func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *SubscriptionHandler) GetByID(w http.ResponseWriter, r *http.Request) {
-	id, ok := subscriptionIDFromRequest(w, r)
+	id, ok := subscriptionIDFromRequest(h.logger, w, r, "get_subscription")
 	if !ok {
 		return
 	}
 
 	subscription, err := h.service.GetByID(r.Context(), id)
 	if err != nil {
-		writeServiceError(w, err)
+		writeServiceError(h.logger, w, err, "get_subscription")
 		return
 	}
 
@@ -64,7 +78,7 @@ func (h *SubscriptionHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 func (h *SubscriptionHandler) List(w http.ResponseWriter, r *http.Request) {
 	subscriptions, err := h.service.List(r.Context())
 	if err != nil {
-		writeServiceError(w, err)
+		writeServiceError(h.logger, w, err, "list_subscriptions")
 		return
 	}
 
@@ -72,19 +86,19 @@ func (h *SubscriptionHandler) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *SubscriptionHandler) Update(w http.ResponseWriter, r *http.Request) {
-	id, ok := subscriptionIDFromRequest(w, r)
+	id, ok := subscriptionIDFromRequest(h.logger, w, r, "update_subscription")
 	if !ok {
 		return
 	}
 
 	var req dto.UpdateSubscriptionRequest
-	if !decodeJSONBody(w, r, &req) {
+	if !decodeJSONBody(h.logger, w, r, &req, "update_subscription") {
 		return
 	}
 
 	subscription, err := h.service.Update(r.Context(), id, req)
 	if err != nil {
-		writeServiceError(w, err)
+		writeServiceError(h.logger, w, err, "update_subscription")
 		return
 	}
 
@@ -92,22 +106,28 @@ func (h *SubscriptionHandler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *SubscriptionHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	id, ok := subscriptionIDFromRequest(w, r)
+	id, ok := subscriptionIDFromRequest(h.logger, w, r, "delete_subscription")
 	if !ok {
 		return
 	}
 
 	if err := h.service.Delete(r.Context(), id); err != nil {
-		writeServiceError(w, err)
+		writeServiceError(h.logger, w, err, "delete_subscription")
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func subscriptionIDFromRequest(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) {
+func subscriptionIDFromRequest(logger *slog.Logger, w http.ResponseWriter, r *http.Request, operation string) (uuid.UUID, bool) {
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
+		logger.Info(
+			"request rejected",
+			"operation", operation,
+			"reason", "invalid_subscription_id",
+			"path", r.URL.Path,
+		)
 		httpresponse.Error(w, http.StatusBadRequest, "invalid subscription id", nil)
 		return uuid.Nil, false
 	}
@@ -115,16 +135,29 @@ func subscriptionIDFromRequest(w http.ResponseWriter, r *http.Request) (uuid.UUI
 	return id, true
 }
 
-func decodeJSONBody(w http.ResponseWriter, r *http.Request, target any) bool {
+func decodeJSONBody(logger *slog.Logger, w http.ResponseWriter, r *http.Request, target any, operation string) bool {
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 
 	if err := decoder.Decode(target); err != nil {
+		logger.Info(
+			"request rejected",
+			"operation", operation,
+			"reason", "invalid_json_body",
+			"path", r.URL.Path,
+			"error", err,
+		)
 		httpresponse.Error(w, http.StatusBadRequest, "invalid JSON body", nil)
 		return false
 	}
 
 	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		logger.Info(
+			"request rejected",
+			"operation", operation,
+			"reason", "invalid_json_body",
+			"path", r.URL.Path,
+		)
 		httpresponse.Error(w, http.StatusBadRequest, "invalid JSON body", nil)
 		return false
 	}
@@ -132,13 +165,30 @@ func decodeJSONBody(w http.ResponseWriter, r *http.Request, target any) bool {
 	return true
 }
 
-func writeServiceError(w http.ResponseWriter, err error) {
+func writeServiceError(logger *slog.Logger, w http.ResponseWriter, err error, operation string) {
 	switch {
 	case errors.Is(err, domain.ErrValidation):
+		logger.Info(
+			"request rejected",
+			"operation", operation,
+			"reason", "validation_failed",
+			"error", err,
+		)
 		httpresponse.Error(w, http.StatusBadRequest, domain.ErrValidation.Error(), validationDetails(err))
 	case errors.Is(err, domain.ErrNotFound):
+		logger.Info(
+			"request failed",
+			"operation", operation,
+			"reason", "not_found",
+			"error", err,
+		)
 		httpresponse.Error(w, http.StatusNotFound, domain.ErrNotFound.Error(), nil)
 	default:
+		logger.Error(
+			"request failed",
+			"operation", operation,
+			"error", err,
+		)
 		httpresponse.Error(w, http.StatusInternalServerError, "internal server error", nil)
 	}
 }

@@ -2,7 +2,7 @@ package router
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -13,10 +13,10 @@ type healthResponse struct {
 	Status string `json:"status"`
 }
 
-func New(logger *log.Logger, subscriptionService handler.SubscriptionService) http.Handler {
+func New(logger *slog.Logger, subscriptionService handler.SubscriptionService) http.Handler {
 	mux := http.NewServeMux()
 
-	subscriptionHandler := handler.NewSubscriptionHandler(subscriptionService)
+	subscriptionHandler := handler.NewSubscriptionHandlerWithLogger(subscriptionService, logger)
 
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -39,10 +39,28 @@ func New(logger *log.Logger, subscriptionService handler.SubscriptionService) ht
 	return requestLogger(logger, mux)
 }
 
-func requestLogger(logger *log.Logger, next http.Handler) http.Handler {
+func requestLogger(logger *slog.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		startedAt := time.Now()
-		next.ServeHTTP(w, r)
-		logger.Printf("request method=%s path=%s remote_addr=%s duration=%s", r.Method, r.URL.Path, r.RemoteAddr, time.Since(startedAt))
+		observer := &statusObserver{ResponseWriter: w, statusCode: http.StatusOK}
+		next.ServeHTTP(observer, r)
+		logger.Info(
+			"request completed",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"remote_addr", r.RemoteAddr,
+			"status_code", observer.statusCode,
+			"duration", time.Since(startedAt),
+		)
 	})
+}
+
+type statusObserver struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (o *statusObserver) WriteHeader(statusCode int) {
+	o.statusCode = statusCode
+	o.ResponseWriter.WriteHeader(statusCode)
 }

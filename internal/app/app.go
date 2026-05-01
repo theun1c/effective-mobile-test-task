@@ -5,9 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
-	"os"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -21,21 +20,24 @@ import (
 type App struct {
 	cfg    config.Config
 	db     *sql.DB
-	logger *log.Logger
+	logger *slog.Logger
 	server *http.Server
 }
 
-func New(cfg config.Config) (*App, error) {
-	logger := log.New(os.Stdout, "", log.LstdFlags|log.LUTC)
-	logger.Printf("initializing application env=%s log_level=%s", cfg.AppEnv, cfg.LogLevel)
+func New(cfg config.Config, logger *slog.Logger) (*App, error) {
+	logger.Info(
+		"initializing application",
+		"app_env", cfg.AppEnv,
+		"log_level", cfg.LogLevel,
+	)
 
-	db, err := newPostgresDB(cfg)
+	db, err := newPostgresDB(cfg, logger)
 	if err != nil {
 		return nil, fmt.Errorf("init postgres: %w", err)
 	}
 
 	subscriptionRepository := postgresrepo.NewSubscriptionRepository(db)
-	subscriptionService := subscriptionservice.New(subscriptionRepository)
+	subscriptionService := subscriptionservice.NewWithLogger(subscriptionRepository, logger)
 	httpRouter := router.New(logger, subscriptionService)
 
 	server := &http.Server{
@@ -62,14 +64,14 @@ func (a *App) Run(ctx context.Context) error {
 		defer cancel()
 
 		if err := a.Shutdown(shutdownCtx); err != nil {
-			a.logger.Printf("graceful shutdown error: %v", err)
+			a.logger.Error("graceful shutdown failed", "error", err)
 		}
 
 		close(shutdownDone)
 	}()
 
-	a.logger.Printf("postgres connection is ready")
-	a.logger.Printf("http server is listening on %s", a.server.Addr)
+	a.logger.Info("postgres connection is ready")
+	a.logger.Info("http server is listening", "address", a.server.Addr)
 
 	err := a.server.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -97,7 +99,15 @@ func (a *App) Shutdown(ctx context.Context) error {
 	return result
 }
 
-func newPostgresDB(cfg config.Config) (*sql.DB, error) {
+func newPostgresDB(cfg config.Config, logger *slog.Logger) (*sql.DB, error) {
+	logger.Info(
+		"connecting to postgres",
+		"host", cfg.Postgres.Host,
+		"port", cfg.Postgres.Port,
+		"database", cfg.Postgres.Name,
+		"user", cfg.Postgres.User,
+	)
+
 	db, err := sql.Open("pgx", cfg.Postgres.DSN())
 	if err != nil {
 		return nil, fmt.Errorf("open postgres connection: %w", err)
@@ -114,6 +124,8 @@ func newPostgresDB(cfg config.Config) (*sql.DB, error) {
 		_ = db.Close()
 		return nil, fmt.Errorf("ping postgres: %w", err)
 	}
+
+	logger.Info("postgres connection established")
 
 	return db, nil
 }

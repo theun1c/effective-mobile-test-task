@@ -1,9 +1,12 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -304,6 +307,31 @@ func TestSubscriptionHandlerMapsUnexpectedErrorToInternalServerError(t *testing.
 	assertErrorResponse(t, recorder, "internal server error", nil)
 }
 
+func TestSubscriptionHandlerLogsUnexpectedError(t *testing.T) {
+	var logBuffer bytes.Buffer
+
+	logger := slog.New(slog.NewJSONHandler(&logBuffer, nil))
+	service := &serviceStub{
+		listFunc: func(ctx context.Context) (dto.SubscriptionListResponse, error) {
+			return dto.SubscriptionListResponse{}, errors.New("boom")
+		},
+	}
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/subscriptions", nil)
+
+	newSubscriptionMuxWithLogger(service, logger).ServeHTTP(recorder, request)
+
+	logOutput := logBuffer.String()
+	if !strings.Contains(logOutput, `"msg":"request failed"`) {
+		t.Fatalf("log output = %q, want request failed message", logOutput)
+	}
+
+	if !strings.Contains(logOutput, `"operation":"list_subscriptions"`) {
+		t.Fatalf("log output = %q, want operation field", logOutput)
+	}
+}
+
 type serviceStub struct {
 	createCalls  int
 	getByIDCalls int
@@ -366,7 +394,11 @@ type errorResponse struct {
 }
 
 func newSubscriptionMux(service *serviceStub) http.Handler {
-	handler := NewSubscriptionHandler(service)
+	return newSubscriptionMuxWithLogger(service, slog.New(slog.NewTextHandler(io.Discard, nil)))
+}
+
+func newSubscriptionMuxWithLogger(service *serviceStub, logger *slog.Logger) http.Handler {
+	handler := NewSubscriptionHandlerWithLogger(service, logger)
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /subscriptions", handler.Create)
 	mux.HandleFunc("GET /subscriptions", handler.List)

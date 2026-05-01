@@ -1,8 +1,11 @@
 package subscription
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
+	"strings"
 	"testing"
 	"time"
 
@@ -275,6 +278,60 @@ func TestServiceUpdateReturnsValidationErrorWithoutCallingRepository(t *testing.
 
 	if repo.updateCalls != 0 {
 		t.Fatalf("Update() repository calls = %d, want 0", repo.updateCalls)
+	}
+}
+
+func TestServiceCreateLogsSuccess(t *testing.T) {
+	var logBuffer bytes.Buffer
+
+	logger := slog.New(slog.NewJSONHandler(&logBuffer, nil))
+	repo := &repositoryStub{
+		createFunc: func(ctx context.Context, subscription domain.Subscription) (domain.Subscription, error) {
+			return subscription, nil
+		},
+	}
+
+	service := NewWithLogger(repo, logger)
+
+	_, err := service.Create(context.Background(), dto.CreateSubscriptionRequest{
+		ServiceName: "Yandex Plus",
+		Price:       400,
+		UserID:      "60601fee-2bf1-4721-ae6f-7636e79a0cba",
+		StartDate:   "07-2025",
+	})
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+
+	logOutput := logBuffer.String()
+	if !strings.Contains(logOutput, `"msg":"subscription created"`) {
+		t.Fatalf("log output = %q, want create message", logOutput)
+	}
+
+	if !strings.Contains(logOutput, `"service_name":"Yandex Plus"`) {
+		t.Fatalf("log output = %q, want service_name field", logOutput)
+	}
+}
+
+func TestServiceDeleteLogsSuccess(t *testing.T) {
+	var logBuffer bytes.Buffer
+
+	logger := slog.New(slog.NewJSONHandler(&logBuffer, nil))
+	repo := &repositoryStub{}
+	service := NewWithLogger(repo, logger)
+	id := uuid.New()
+
+	if err := service.Delete(context.Background(), id); err != nil {
+		t.Fatalf("Delete() error = %v", err)
+	}
+
+	logOutput := logBuffer.String()
+	if !strings.Contains(logOutput, `"msg":"subscription deleted"`) {
+		t.Fatalf("log output = %q, want delete message", logOutput)
+	}
+
+	if !strings.Contains(logOutput, id.String()) {
+		t.Fatalf("log output = %q, want subscription id", logOutput)
 	}
 }
 

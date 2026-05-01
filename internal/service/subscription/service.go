@@ -3,11 +3,13 @@ package subscription
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/google/uuid"
 
 	domain "github.com/theun1c/effective-mobile-test-task/internal/domain/subscription"
 	"github.com/theun1c/effective-mobile-test-task/internal/dto"
+	applogger "github.com/theun1c/effective-mobile-test-task/internal/logger"
 	"github.com/theun1c/effective-mobile-test-task/internal/types/yearmonth"
 	"github.com/theun1c/effective-mobile-test-task/internal/validation"
 )
@@ -22,10 +24,22 @@ type Repository interface {
 
 type Service struct {
 	repository Repository
+	logger     *slog.Logger
 }
 
 func New(repository Repository) *Service {
-	return &Service{repository: repository}
+	return NewWithLogger(repository, applogger.Nop())
+}
+
+func NewWithLogger(repository Repository, logger *slog.Logger) *Service {
+	if logger == nil {
+		logger = applogger.Nop()
+	}
+
+	return &Service{
+		repository: repository,
+		logger:     logger,
+	}
 }
 
 func (s *Service) Create(ctx context.Context, req dto.CreateSubscriptionRequest) (dto.SubscriptionResponse, error) {
@@ -42,6 +56,13 @@ func (s *Service) Create(ctx context.Context, req dto.CreateSubscriptionRequest)
 	if err != nil {
 		return dto.SubscriptionResponse{}, err
 	}
+
+	s.logger.Info(
+		"subscription created",
+		"subscription_id", created.ID,
+		"user_id", created.UserID,
+		"service_name", created.ServiceName,
+	)
 
 	return toSubscriptionResponse(created), nil
 }
@@ -87,11 +108,24 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, req dto.UpdateSubscr
 		return dto.SubscriptionResponse{}, err
 	}
 
+	s.logger.Info(
+		"subscription updated",
+		"subscription_id", updated.ID,
+		"user_id", updated.UserID,
+		"service_name", updated.ServiceName,
+	)
+
 	return toSubscriptionResponse(updated), nil
 }
 
 func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
-	return s.repository.Delete(ctx, id)
+	if err := s.repository.Delete(ctx, id); err != nil {
+		return err
+	}
+
+	s.logger.Info("subscription deleted", "subscription_id", id)
+
+	return nil
 }
 
 func newDomainSubscription(
