@@ -19,6 +19,15 @@ func New(logger *slog.Logger, subscriptionService handler.SubscriptionService) h
 
 	subscriptionHandler := handler.NewSubscriptionHandlerWithLogger(subscriptionService, logger)
 
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+
+		http.Redirect(w, r, "/swagger/", http.StatusMovedPermanently)
+	})
+
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)

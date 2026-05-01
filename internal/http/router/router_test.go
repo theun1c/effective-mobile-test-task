@@ -31,12 +31,12 @@ func TestNewServesSwaggerUI(t *testing.T) {
 	}
 
 	body := recorder.Body.String()
-	if !strings.Contains(body, "/swagger/openapi.yaml") {
-		t.Fatalf("body = %q, want link to raw openapi spec", body)
+	if !strings.Contains(body, "SwaggerUIBundle") {
+		t.Fatalf("body = %q, want interactive swagger ui", body)
 	}
 
-	if strings.Contains(body, "jsdelivr") {
-		t.Fatalf("body = %q, want self-contained swagger page without CDN assets", body)
+	if !strings.Contains(body, "/swagger/openapi.yaml") {
+		t.Fatalf("body = %q, want openapi spec url", body)
 	}
 }
 
@@ -58,6 +58,23 @@ func TestNewServesSwaggerSpec(t *testing.T) {
 
 	if body := recorder.Body.String(); !strings.Contains(body, "openapi: 3.0.3") {
 		t.Fatalf("body = %q, want openapi document", body)
+	}
+}
+
+func TestNewRedirectsRootToSwaggerUI(t *testing.T) {
+	router := New(slog.New(slog.NewTextHandler(io.Discard, nil)), serviceStub{})
+
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusMovedPermanently {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusMovedPermanently)
+	}
+
+	if location := recorder.Header().Get("Location"); location != "/swagger/" {
+		t.Fatalf("Location = %q, want %q", location, "/swagger/")
 	}
 }
 
