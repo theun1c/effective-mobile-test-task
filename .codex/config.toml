@@ -1,0 +1,35 @@
+# .codex/config.toml
+#
+# Project-specific Codex settings for Test task - EF Mobile
+# This file is safe to commit because it does not contain secrets.
+
+# Conservative default mode for backend development.
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+
+[profiles.review]
+# Read-only mode for code review, architecture review and security analysis.
+# Good for: "review auth module", "analyze issues module", "find risks".
+approval_policy = "never"
+sandbox_mode = "read-only"
+
+
+[profiles.dev]
+# Normal development mode.
+# Good for: implementing small tasks, adding tests, fixing bugs.
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+
+[profiles.fast]
+# Faster local mode for small low-risk changes.
+# Good for: formatting, small lint fixes, renaming, tiny edits.
+approval_policy = "never"
+sandbox_mode = "workspace-write"
+
+
+[profiles.safe]
+# Very conservative mode for sensitive areas like auth, sessions, Prisma migrations.
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
