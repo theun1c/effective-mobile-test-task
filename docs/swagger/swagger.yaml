@@ -1,0 +1,313 @@
+openapi: 3.0.3
+info:
+  title: Effective Mobile Subscriptions API
+  version: 1.0.0
+  description: |
+    CRUDL API for managing user subscriptions.
+
+    Dates in the public API use the `MM-YYYY` format.
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+tags:
+  - name: Subscriptions
+    description: Operations for managing subscriptions
+paths:
+  /subscriptions:
+    post:
+      tags:
+        - Subscriptions
+      summary: Create subscription
+      description: Creates a new subscription record.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSubscriptionRequest'
+            examples:
+              create:
+                value:
+                  service_name: Yandex Plus
+                  price: 400
+                  user_id: 60601fee-2bf1-4721-ae6f-7636e79a0cba
+                  start_date: 07-2025
+      responses:
+        '201':
+          description: Subscription created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      tags:
+        - Subscriptions
+      summary: List subscriptions
+      description: Returns all subscriptions without pagination or filtering.
+      responses:
+        '200':
+          description: Subscription list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionListResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /subscriptions/{id}:
+    get:
+      tags:
+        - Subscriptions
+      summary: Get subscription by ID
+      description: Returns a single subscription by UUID.
+      parameters:
+        - $ref: '#/components/parameters/SubscriptionID'
+      responses:
+        '200':
+          description: Subscription found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags:
+        - Subscriptions
+      summary: Update subscription
+      description: Fully updates an existing subscription by UUID.
+      parameters:
+        - $ref: '#/components/parameters/SubscriptionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSubscriptionRequest'
+            examples:
+              update:
+                value:
+                  service_name: Yandex Plus
+                  price: 500
+                  user_id: 60601fee-2bf1-4721-ae6f-7636e79a0cba
+                  start_date: 07-2025
+                  end_date: 12-2025
+      responses:
+        '200':
+          description: Subscription updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+        - Subscriptions
+      summary: Delete subscription
+      description: Deletes an existing subscription by UUID.
+      parameters:
+        - $ref: '#/components/parameters/SubscriptionID'
+      responses:
+        '204':
+          description: Subscription deleted. Response body is empty.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  parameters:
+    SubscriptionID:
+      name: id
+      in: path
+      required: true
+      description: Subscription UUID
+      schema:
+        type: string
+        format: uuid
+      example: d65a5e7a-0d26-4514-b4ac-8fe95583f07f
+  responses:
+    BadRequest:
+      description: Invalid JSON, invalid UUID, or validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalidJson:
+              summary: Invalid JSON body
+              value:
+                error: invalid JSON body
+            invalidSubscriptionID:
+              summary: Invalid path UUID
+              value:
+                error: invalid subscription id
+            validationError:
+              summary: Validation error
+              value:
+                error: subscription validation failed
+                errors:
+                  - field: user_id
+                    message: must be a valid UUID
+    NotFound:
+      description: Subscription not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: subscription not found
+    InternalServerError:
+      description: Unexpected internal error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: internal server error
+  schemas:
+    YearMonth:
+      type: string
+      description: Month and year in MM-YYYY format
+      pattern: '^(0[1-9]|1[0-2])-\d{4}$'
+      example: 07-2025
+    CreateSubscriptionRequest:
+      type: object
+      required:
+        - service_name
+        - price
+        - user_id
+        - start_date
+      properties:
+        service_name:
+          type: string
+          description: Subscription service name
+          example: Yandex Plus
+        price:
+          type: integer
+          description: Monthly price in rubles
+          minimum: 1
+          example: 400
+        user_id:
+          type: string
+          format: uuid
+          description: User UUID
+          example: 60601fee-2bf1-4721-ae6f-7636e79a0cba
+        start_date:
+          $ref: '#/components/schemas/YearMonth'
+        end_date:
+          allOf:
+            - $ref: '#/components/schemas/YearMonth'
+          nullable: true
+          description: Optional end month
+    UpdateSubscriptionRequest:
+      type: object
+      required:
+        - service_name
+        - price
+        - user_id
+        - start_date
+      properties:
+        service_name:
+          type: string
+          description: Subscription service name
+          example: Yandex Plus
+        price:
+          type: integer
+          description: Monthly price in rubles
+          minimum: 1
+          example: 500
+        user_id:
+          type: string
+          format: uuid
+          description: User UUID
+          example: 60601fee-2bf1-4721-ae6f-7636e79a0cba
+        start_date:
+          $ref: '#/components/schemas/YearMonth'
+        end_date:
+          allOf:
+            - $ref: '#/components/schemas/YearMonth'
+          nullable: true
+          description: Optional end month
+    SubscriptionResponse:
+      type: object
+      required:
+        - id
+        - service_name
+        - price
+        - user_id
+        - start_date
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Subscription UUID
+          example: d65a5e7a-0d26-4514-b4ac-8fe95583f07f
+        service_name:
+          type: string
+          description: Subscription service name
+          example: Yandex Plus
+        price:
+          type: integer
+          description: Monthly price in rubles
+          example: 400
+        user_id:
+          type: string
+          format: uuid
+          description: User UUID
+          example: 60601fee-2bf1-4721-ae6f-7636e79a0cba
+        start_date:
+          $ref: '#/components/schemas/YearMonth'
+        end_date:
+          allOf:
+            - $ref: '#/components/schemas/YearMonth'
+          nullable: true
+          description: Optional end month
+    SubscriptionListResponse:
+      type: object
+      required:
+        - subscriptions
+      properties:
+        subscriptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubscriptionResponse'
+    ErrorDetail:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          example: user_id
+        message:
+          type: string
+          example: must be a valid UUID
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+          example: subscription validation failed
+        errors:
+          type: array
+          description: Validation details. Present only for validation errors.
+          items:
+            $ref: '#/components/schemas/ErrorDetail'

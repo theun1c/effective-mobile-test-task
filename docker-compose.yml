@@ -1,0 +1,43 @@
+services:
+  app:
+    build:
+      context: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      HTTP_HOST: 0.0.0.0
+      HTTP_PORT: "8080"
+      HTTP_SHUTDOWN_TIMEOUT: ${HTTP_SHUTDOWN_TIMEOUT:-5s}
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-subscriptions}
+      DB_USER: ${DB_USER:-subscriptions}
+      DB_PASSWORD: ${DB_PASSWORD:-subscriptions}
+      DB_SSLMODE: disable
+      DB_PING_TIMEOUT: ${DB_PING_TIMEOUT:-5s}
+    ports:
+      - "${APP_HOST_PORT:-8080}:8080"
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-subscriptions}
+      POSTGRES_USER: ${DB_USER:-subscriptions}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-subscriptions}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
