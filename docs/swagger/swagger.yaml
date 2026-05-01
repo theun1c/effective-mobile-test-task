@@ -12,6 +12,8 @@ servers:
 tags:
   - name: Subscriptions
     description: Operations for managing subscriptions
+  - name: Sum Cost
+    description: Operations for calculating subscription total cost
 paths:
   /subscriptions:
     post:
@@ -55,6 +57,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SubscriptionListResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /subscriptions/total:
+    get:
+      tags:
+        - Sum Cost
+      summary: Calculate total subscription cost
+      description: Calculates the total cost of subscriptions within the selected period.
+      parameters:
+        - name: from
+          in: query
+          required: true
+          description: Start of the period in MM-YYYY format
+          schema:
+            $ref: '#/components/schemas/YearMonth'
+        - name: to
+          in: query
+          required: true
+          description: End of the period in MM-YYYY format
+          schema:
+            $ref: '#/components/schemas/YearMonth'
+        - name: user_id
+          in: query
+          required: false
+          description: Optional user UUID filter
+          schema:
+            type: string
+            format: uuid
+        - name: service_name
+          in: query
+          required: false
+          description: Optional subscription service name filter
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Total cost calculated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionTotalResponse'
+              example:
+                total_cost: 2400
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /subscriptions/{id}:
@@ -285,6 +332,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SubscriptionResponse'
+    SubscriptionTotalResponse:
+      type: object
+      required:
+        - total_cost
+      properties:
+        total_cost:
+          type: integer
+          description: Total subscription cost in rubles
+          example: 2400
     ErrorDetail:
       type: object
       required:

@@ -15,6 +15,7 @@ import (
 	"github.com/theun1c/effective-mobile-test-task/internal/http/router"
 	postgresrepo "github.com/theun1c/effective-mobile-test-task/internal/repository/postgres"
 	subscriptionservice "github.com/theun1c/effective-mobile-test-task/internal/service/subscription"
+	subscriptiontotalservice "github.com/theun1c/effective-mobile-test-task/internal/service/subscription_total"
 )
 
 type App struct {
@@ -37,8 +38,10 @@ func New(cfg config.Config, logger *slog.Logger) (*App, error) {
 	}
 
 	subscriptionRepository := postgresrepo.NewSubscriptionRepository(db)
+	subscriptionTotalRepository := postgresrepo.NewSubscriptionTotalRepository(db)
 	subscriptionService := subscriptionservice.NewWithLogger(subscriptionRepository, logger)
-	httpRouter := router.New(logger, subscriptionService)
+	subscriptionTotalService := subscriptiontotalservice.New(subscriptionTotalRepository)
+	httpRouter := router.NewWithTotal(logger, subscriptionService, subscriptionTotalService)
 
 	server := &http.Server{
 		Addr:              cfg.HTTP.Address(),
